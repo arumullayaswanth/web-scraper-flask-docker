@@ -1,42 +1,51 @@
-# ---- Scraper Stage ----
-FROM node:18-slim AS scraper
+# ---- Build Stage ----
+FROM node:18-slim AS build-stage
 
+# Install necessary dependencies for Puppeteer
 RUN apt-get update && apt-get install -y \
-    chromium \
+    wget \
+    curl \
+    ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
     libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcups2 \
-    libdbus-1-3 \
-    libgdk-pixbuf2.0-0 \
-    libnspr4 \
-    libnss3 \
     libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    --no-install-recommends && apt-get clean
+    libnss3 \
+    lsb-release \
+    xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
 
+# Set environment variable to skip Chromium download by Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
+# Set the working directory
 WORKDIR /app
-COPY package.json ./
+
+# Copy package.json and install dependencies (including puppeteer)
+COPY package.json package-lock.json ./
 RUN npm install
+
+# Copy the scraper script into the container
 COPY scrape.js ./
-ENV SCRAPE_URL=https://example.com
-RUN node scrape.js
 
-# ---- Server Stage ----
-FROM python:3.10-slim AS server
+# ---- Final Stage (Python) ----
+FROM python:3.10-slim AS server-stage
 
+# Set the working directory for the Python Flask server
 WORKDIR /app
 
-COPY --from=scraper /app/scraped_data.json ./scraped_data.json
-COPY server.py .
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the server files
+COPY server.py ./
+COPY requirements.txt ./
 
+# Install Flask dependencies
+RUN pip install -r requirements.txt
+
+# Copy the scraped data from the build stage
+COPY --from=build-stage /app/scraped_data.json ./
+
+# Expose port 5000 for the Flask server
 EXPOSE 5000
+
+# Command to run the Flask app
 CMD ["python", "server.py"]
