@@ -2,7 +2,8 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 
-const url = process.env.SCRAPE_URL || 'https://example.com';
+const url = process.env.SCRAPE_URL || 'https://arumullayaswanth.github.io/Netflix-Projrct/';
+
 
 (async () => {
   const browser = await puppeteer.launch({
