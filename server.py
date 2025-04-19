@@ -11,4 +11,5 @@ def home():
     return jsonify(data)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='54.227.172.202', port=5000)  #give your ec2 Public IPv4 address
+
