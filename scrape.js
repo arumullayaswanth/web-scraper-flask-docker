@@ -1,26 +1,28 @@
-// scrape.js
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 
-const url = process.env.SCRAPE_URL || 'https://arumullayaswanth.github.io/Netflix-Projrct/';
+const url = process.env.SCRAPE_URL || 'https://arumullayaswanth.github.io/Netflix-Projrct/index.html';
 
+async function scrape() {
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    const page = await browser.newPage();
+    await page.goto(url);
 
-(async () => {
-  const browser = await puppeteer.launch({
-    headless: true,
-    executablePath: '/usr/bin/chromium',
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+    const data = await page.evaluate(() => {
+        const title = document.title;
+        const firstHeading = document.querySelector('h1') ? document.querySelector('h1').innerText : 'No Heading Found';
+        const firstParagraph = document.querySelector('p') ? document.querySelector('p').innerText : 'No Paragraph Found';
 
-  const page = await browser.newPage();
-  await page.goto(url);
+        return {
+            title,
+            firstHeading,
+            firstParagraph
+        };
+    });
 
-  const data = await page.evaluate(() => {
-    const title = document.title;
-    const firstHeading = document.querySelector('h1')?.innerText || 'No heading';
-    return { title, firstHeading };
-  });
+    fs.writeFileSync('scraped_data.json', JSON.stringify(data, null, 2));
 
-  fs.writeFileSync('scraped_data.json', JSON.stringify(data, null, 2));
-  await browser.close();
-})();
+    await browser.close();
+}
+
+scrape();
